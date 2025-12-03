@@ -22,7 +22,6 @@ export default function createModelStore (model, state = {}, getters = {}, actio
       return areObjEquals(d,data)
     }
   }
-  const resolveR = (item) => item
   return {
     state : {
       itemSelected        : { loading: false, ...model.getDefault() },
@@ -39,6 +38,7 @@ export default function createModelStore (model, state = {}, getters = {}, actio
       selectedStatus      : false,
       timeOutAsinc        : null,
       check               : check,
+      resolve             : (item) => item,
       ...state
     },
     getters : {
@@ -52,21 +52,21 @@ export default function createModelStore (model, state = {}, getters = {}, actio
         return item ? item[model.getNameAttribute()] : null
       },
       // Getter para obtener el objeto seleccionado
-      find : ({ items, key }) => (id, level = 1) => {
-        const item = items.find(d => d[key] === id)
-        return item ? resolveR(item, level):model.getDefault()
+      find : ({ items, key, resolve }) => (id, level = 1) => {
+        const item = items.find(d => d[key] === Number(id))
+        return item ? resolve(item, level):model.getDefault()
       },
       // Getter para obtener la lista de objetos
-      list : ({items}) => {
-        return items.map(resolveR)
+      list : ({items, resolve}) => {
+        return items.map(resolve)
       },
       // Getter para obtener la lista de objetos filtrados
-      filter : ({items}) => (filter, level = 1) => {
-        return items.filter(filter).map(item => resolveR(item, level))
+      filter : ({items,resolve}) => (filter, level = 1) => {
+        return items.filter(filter).map(item => resolve(item, level))
       },
       // Getter para obtener el objeto seleccionado o falso si no hay seleccion
-      selected : ({ itemSelected, selectedStatus }) => {
-        return selectedStatus ? resolveR(itemSelected) : selectedStatus
+      selected : ({ itemSelected, selectedStatus, resolve }) => {
+        return selectedStatus ? resolve(itemSelected) : selectedStatus
       },
       ...getters
     },
@@ -131,10 +131,10 @@ export default function createModelStore (model, state = {}, getters = {}, actio
       },
       // Action para obtener la lista de objetos de el servidor
       async get (params = {}, pagination={}) {
-      //var commit = store.commit
+        //var commit = store.commit
         const action = this.syncStatus ? 'sync' : 'setItems';
         
-        if (model.paginate) {
+        if (this.paginate) {
           params = {...params, ...Object.assign({
             page : this.pagination.current_page, per_page : this.pagination.per_page
           }, pagination) };
@@ -145,11 +145,12 @@ export default function createModelStore (model, state = {}, getters = {}, actio
               const data = response.data;
               model.save(data.data);
               this[action](data.data);
-              // eslint-disable-next-line no-unused-vars
-              const { data: _, ...pagination } = data.meta;
-              this.pagination = Object.assign(this.pagination, pagination);
+              if (this.paginate) {
+                // eslint-disable-next-line no-unused-vars
+                const { data: _, ...pagination } = data.meta;
+                this.pagination = Object.assign(this.pagination, pagination);
+              }
               this.afterGet();
-              console.log('get', this)
               resolve(response);
             }).catch(reject);
           })
@@ -176,7 +177,7 @@ export default function createModelStore (model, state = {}, getters = {}, actio
         //var commit = store.commit
         return new Promise((resolve, reject) => {
           model.getAll(params).then(response => {
-            this.sync(response.data);
+            this.sync(response.data.data);
             this.afterGet();
             resolve(response);
           }).catch(reject);
@@ -189,7 +190,7 @@ export default function createModelStore (model, state = {}, getters = {}, actio
           // divide y vencceras
           this.setItems([]);
           model.getAll(params).then(response => {
-            this.setItems(response.data);
+            this.setItems(response.data.data);
             this.afterGet();
             resolve(response);
           }).catch(reject);
