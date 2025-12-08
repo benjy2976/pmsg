@@ -24,6 +24,8 @@ export default class Model {
       modelGetters        : {},// Aquí se configuran parámetros adicionales a enviar en los request excepto DELETE
       paginate            : false,// Condicional para definir si el modelo tiene paginación
       pagination          : {current_page: 1, per_page: 10},// Configuración de paginación
+      responseAdapter     : (response) => response?.data?.data ?? response?.data ?? response,// Extrae la data del response
+      paginationAdapter   : (response) => response?.data?.meta ?? null,// Extrae datos de paginación si existen
     }
     //config.hasKey=config.hasKey!=undefined?config.hasKey:config.key!=undefined
     defaultValues = Object.assign(defaultValues, config)
@@ -48,6 +50,8 @@ export default class Model {
     this.modelGetters = defaultValues.modelGetters
     this.paginate = defaultValues.paginate
     this.pagination = defaultValues.pagination
+    this.responseAdapter = defaultValues.responseAdapter
+    this.paginationAdapter = defaultValues.paginationAdapter
     this.state = {}
     this.getters = {}
     this.actions = {}
@@ -190,9 +194,11 @@ export default class Model {
 
         }
       }),
-      sync       : this.sync,
-      paginate   : this.paginate,
-      pagination : this.pagination,
+      sync              : this.sync,
+      paginate          : this.paginate,
+      pagination        : this.pagination,
+      responseAdapter   : this.responseAdapter,
+      paginationAdapter : this.paginationAdapter,
     }
   }
 

@@ -5,7 +5,9 @@ import { areObjEquals } from "./helpers";
 
 export default function createModelStore (model, state = {}, getters = {}, actions = {}) {
   const defData = {
-    key : 'id',
+    key               : 'id',
+    responseAdapter   : (response) => response?.data?.data ?? response?.data ?? response,
+    paginationAdapter : (response) => response?.data?.meta ?? null,
   }
   const config = Object.assign(defData, model.getStoreConfig())
   let check =(d,data)=>{return d[config.key] === data[config.key]}
@@ -23,7 +25,7 @@ export default function createModelStore (model, state = {}, getters = {}, actio
     }
   }
   return {
-    state : {
+    state : () => ({
       itemSelected        : { loading: false, ...model.getDefault() },
       items               : [],
       keysAsinc           : [],
@@ -33,14 +35,14 @@ export default function createModelStore (model, state = {}, getters = {}, actio
       maxRelationsResolve : config.maxRelationsResolve,
       relations           : config.relations,
       syncStatus          : config.sync,
-      paginate            : config.paginate,  
+      paginate            : config.paginate,
       pagination          : config.pagination,
       selectedStatus      : false,
       timeOutAsinc        : null,
       check               : check,
       resolve             : (item) => item,
       ...state
-    },
+    }),
     getters : {
       // Getter para obtener el indice de la tabla
       //key     : ({key}) => { return key },
@@ -124,7 +126,7 @@ export default function createModelStore (model, state = {}, getters = {}, actio
         //var commit = store.commit
         return new Promise((resolve, reject) => {
           model.show(id).then(response => {
-            this.syncItem(response.data)
+            this.syncItem(config.responseAdapter(response))
             resolve(response);
           }).catch(reject);
         })
@@ -142,13 +144,14 @@ export default function createModelStore (model, state = {}, getters = {}, actio
         if (!(await model.saved(params))) {
           return new Promise((resolve, reject) => {
             model.getAll(params).then(response => {
-              const data = response.data;
-              model.save(data.data);
-              this[action](data.data);
+              const data = config.responseAdapter(response);
+              model.save(data);
+              this[action](data);
               if (this.paginate) {
-                // eslint-disable-next-line no-unused-vars
-                const { data: _, ...pagination } = data.meta;
-                this.pagination = Object.assign(this.pagination, pagination);
+                const pagination = config.paginationAdapter(response);
+                if (pagination) {
+                  this.pagination = Object.assign(this.pagination, pagination);
+                }
               }
               this.afterGet();
               resolve(response);
@@ -177,7 +180,7 @@ export default function createModelStore (model, state = {}, getters = {}, actio
         //var commit = store.commit
         return new Promise((resolve, reject) => {
           model.getAll(params).then(response => {
-            this.sync(response.data.data);
+            this.sync(config.responseAdapter(response));
             this.afterGet();
             resolve(response);
           }).catch(reject);
@@ -190,7 +193,7 @@ export default function createModelStore (model, state = {}, getters = {}, actio
           // divide y vencceras
           this.setItems([]);
           model.getAll(params).then(response => {
-            this.setItems(response.data.data);
+            this.setItems(config.responseAdapter(response));
             this.afterGet();
             resolve(response);
           }).catch(reject);
@@ -205,7 +208,7 @@ export default function createModelStore (model, state = {}, getters = {}, actio
       create( data){
         return new Promise((resolve, reject) => {
           model.create(data).then(response => {
-            this.syncItem(response.data.data);
+            this.syncItem(config.responseAdapter(response));
             resolve(response)
           }).catch(error => {
             reject(error)
@@ -217,7 +220,7 @@ export default function createModelStore (model, state = {}, getters = {}, actio
       update( data){
         return new Promise((resolve, reject) => {
           model.update(data).then(response => {
-            this.syncItem(response.data.data);
+            this.syncItem(config.responseAdapter(response));
             resolve(response)
           }).catch(error => {
             reject(error)

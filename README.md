@@ -114,10 +114,10 @@ Producto.show(1)
 if you are using Pinia you can create the storeDefault
 crating the next structure
 ```js
-/store
-/store/modules
+/stores
+/stores/modules
 ```
-into /store/modules you can create a products.js file
+into /stores/modules you can create a products.js file
 ```js
 //import {Product} from '../../models' //import if necessary
 
@@ -216,7 +216,7 @@ export default {
 
 
 ```
-you need to create a file index.js into a /store folder you have two ways to declare the state
+you need to create a file index.js into a /stores folder you have two ways to declare the state
 
 ````js
 import { defineStore } from "pinia";
