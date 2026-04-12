@@ -60,7 +60,7 @@ export default class Model {
   get(url = '', params = {}, config = {}) {
     params = Object.assign(params, this.params)
     url = this.route + '/' + url
-    return this.instance.get(url, params, config)
+    return this.instance.get(url, { params }, config)
   }
 
   post(url = '', params = {}) {
@@ -72,7 +72,7 @@ export default class Model {
   // Función para obtener el listado de Objetos de la base de datos
   getAll(params = {}, config = {}) {
     params = Object.assign(params, this.params)
-    return this.instance.get(this.route, params, config)
+    return this.instance.get(this.route, { params }, config)
   }
 
   // Función para crear un objeto en la base de datos
